@@ -89,9 +89,7 @@
 <body>
     <div class="container">
         <h1>Controle de Automação Raphinha</h1>
-        <!-- Alteração aqui: Removemos a instrução de DDI/DDD e o + -->
         <label for="phoneNumber">Número do Cliente:</label>
-        <!-- Alteração aqui: Exemplo mais simples sem o + -->
         <input type="text" id="phoneNumber" placeholder="Ex: 5511987654321">
 
         <button id="playBtn">Ativar Automação</button>
@@ -106,7 +104,7 @@
         const N8N_WEBHOOK_URL = 'https://raphascare.app.n8n.cloud/webhook/7aaa2ee4-9a9c-4eba-8c25-e804e2d18f88'; 
 
         async function sendCommand(command) {
-            let phoneNumber = document.getElementById('phoneNumber').value.trim(); // Usamos 'let' para poder modificar
+            const phoneNumber = document.getElementById('phoneNumber').value.trim(); // 'const' novamente, pois não vamos modificar aqui.
             const messageDiv = document.getElementById('message');
             messageDiv.style.display = 'none'; // Esconde mensagens anteriores
             messageDiv.className = ''; // Limpa classes de estilo
@@ -118,15 +116,10 @@
                 return;
             }
 
-            // NOVA LÓGICA: Adiciona o '+' se ele não estiver presente
-            if (!phoneNumber.startsWith('+')) {
-                phoneNumber = '+' + phoneNumber;
-            }
-
-            // Validação mais simples, focada apenas se tem dígitos e o +
-            // Pode ser aprimorada conforme sua necessidade
-            if (!/^\+\d+$/.test(phoneNumber)) {
-                messageDiv.textContent = 'Formato de número inválido. Use DDI+DDD+Número (ex: 5511987654321).';
+            // NOVA LÓGICA: Valida que o número contém APENAS dígitos.
+            // Não adiciona nenhum '+' pois os números no Supabase não o possuem.
+            if (!/^\d+$/.test(phoneNumber)) { // Checa se contém apenas dígitos (0-9)
+                messageDiv.textContent = 'Formato de número inválido. Use apenas números (DDI+DDD+Número).';
                 messageDiv.className = 'error';
                 messageDiv.style.display = 'block';
                 return;
@@ -140,7 +133,7 @@
                     },
                     body: JSON.stringify({
                         command: command,
-                        phoneNumber: phoneNumber
+                        phoneNumber: phoneNumber // O número é enviado sem o '+', como digitado pelo usuário.
                     })
                 });
 
@@ -150,10 +143,12 @@
                     messageDiv.textContent = `Comando "${command}" enviado para ${phoneNumber}: ${data.message}`;
                     messageDiv.className = 'success';
                 } else {
-                    messageDiv.textContent = `Erro ao enviar comando: ${data.message || 'Erro desconhecido.'}`;
+                    // Tenta exibir a mensagem de erro do n8n, ou uma genérica.
+                    messageDiv.textContent = `Erro ao enviar comando: ${data.message || 'Resposta inesperada do servidor n8n.'}`;
                     messageDiv.className = 'error';
                 }
             } catch (error) {
+                // Erro de rede ou JSON inválido (se o n8n não retornar JSON válido)
                 messageDiv.textContent = `Erro de conexão: ${error.message}. Verifique a URL do n8n ou sua internet.`;
                 messageDiv.className = 'error';
             }

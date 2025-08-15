@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Automação Raphinha</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+            text-align: left;
+        }
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 8px;
+            transition: background-color 0.3s ease;
+            width: calc(50% - 16px); /* Para dois botões na linha */
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button#pauseBtn {
+            background-color: #dc3545;
+        }
+        button#pauseBtn:hover {
+            background-color: #c82333;
+        }
+        #message {
+            margin-top: 25px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #333;
+            background-color: #e2e3e5;
+            display: none; /* Escondido por padrão */
+        }
+        #message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        #message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Controle de Automação Raphinha</h1>
+        <label for="phoneNumber">Número do Cliente (com DDI e DDD, ex: +5511987654321):</label>
+        <input type="text" id="phoneNumber" placeholder="Ex: +5511987654321">
+
+        <button id="playBtn">Ativar Automação</button>
+        <button id="pauseBtn">Pausar Automação</button>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // *** PASSO MUITO IMPORTANTE: COLE A URL DO SEU WEBHOOK N8N AQUI ***
+        // Esta é a "Production URL" que você copiou no Passo 1.2
+        const N8N_WEBHOOK_URL = 'https://raphascare.app.n8n.cloud/webhook/7aaa2ee4-9a9c-4eba-8c25-e804e2d18f88'; 
+
+        async function sendCommand(command) {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const messageDiv = document.getElementById('message');
+            messageDiv.style.display = 'none'; // Esconde mensagens anteriores
+            messageDiv.className = ''; // Limpa classes de estilo
+
+            if (!phoneNumber) {
+                messageDiv.textContent = 'Por favor, digite o número do cliente.';
+                messageDiv.className = 'error';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            // Exemplo de validação de número (pode ser melhorada)
+            if (!phoneNumber.startsWith('+') || phoneNumber.length < 10) {
+                messageDiv.textContent = 'Formato de número inválido. Use DDI+DDD+Número (ex: +5511987654321).';
+                messageDiv.className = 'error';
+                messageDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        command: command,
+                        phoneNumber: phoneNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    messageDiv.textContent = `Comando "${command}" enviado para ${phoneNumber}: ${data.message}`;
+                    messageDiv.className = 'success';
+                } else {
+                    messageDiv.textContent = `Erro ao enviar comando: ${data.message || 'Erro desconhecido.'}`;
+                    messageDiv.className = 'error';
+                }
+            } catch (error) {
+                messageDiv.textContent = `Erro de conexão: ${error.message}. Verifique a URL do n8n ou sua internet.`;
+                messageDiv.className = 'error';
+            }
+            messageDiv.style.display = 'block'; // Mostra a mensagem
+        }
+
+        document.getElementById('playBtn').addEventListener('click', () => sendCommand('/play'));
+        document.getElementById('pauseBtn').addEventListener('click', () => sendCommand('/pause'));
+    </script>
+</body>
+</html>

@@ -89,8 +89,9 @@
 <body>
     <div class="container">
         <h1>Controle de Automação Raphinha</h1>
-        <label for="phoneNumber">Número do Cliente:</label>
-        <input type="text" id="phoneNumber" placeholder="Ex: 5511987654321">
+        <!-- Alterações na label e placeholder para maior clareza -->
+        <label for="phoneNumber">Número do Cliente (inclua o código do país, **sem o sinal de +**):</label>
+        <input type="text" id="phoneNumber" placeholder="Ex: 5511987654321 (Brasil) ou 447522991893 (Reino Unido)">
 
         <button id="playBtn">Ativar Automação</button>
         <button id="pauseBtn">Pausar Automação</button>
@@ -100,14 +101,13 @@
 
     <script>
         // *** PASSO MUITO IMPORTANTE: COLE A URL DO SEU WEBHOOK N8N AQUI ***
-        // Esta é a "Production URL" que você copiou no Passo 1.2
         const N8N_WEBHOOK_URL = 'https://raphascare.app.n8n.cloud/webhook/7aaa2ee4-9a9c-4eba-8c25-e804e2d18f88'; 
 
         async function sendCommand(command) {
-            const phoneNumber = document.getElementById('phoneNumber').value.trim(); // 'const' novamente, pois não vamos modificar aqui.
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
             const messageDiv = document.getElementById('message');
-            messageDiv.style.display = 'none'; // Esconde mensagens anteriores
-            messageDiv.className = ''; // Limpa classes de estilo
+            messageDiv.style.display = 'none';
+            messageDiv.className = '';
 
             if (!phoneNumber) {
                 messageDiv.textContent = 'Por favor, digite o número do cliente.';
@@ -116,10 +116,9 @@
                 return;
             }
 
-            // NOVA LÓGICA: Valida que o número contém APENAS dígitos.
-            // Não adiciona nenhum '+' pois os números no Supabase não o possuem.
-            if (!/^\d+$/.test(phoneNumber)) { // Checa se contém apenas dígitos (0-9)
-                messageDiv.textContent = 'Formato de número inválido. Use apenas números (DDI+DDD+Número).';
+            // Validação que aceita APENAS dígitos, o que é o formato do seu Supabase.
+            if (!/^\d+$/.test(phoneNumber)) {
+                messageDiv.textContent = 'Formato de número inválido. Use apenas números (inclua o código do país, sem o +).';
                 messageDiv.className = 'error';
                 messageDiv.style.display = 'block';
                 return;
@@ -133,7 +132,7 @@
                     },
                     body: JSON.stringify({
                         command: command,
-                        phoneNumber: phoneNumber // O número é enviado sem o '+', como digitado pelo usuário.
+                        phoneNumber: phoneNumber
                     })
                 });
 
@@ -143,16 +142,14 @@
                     messageDiv.textContent = `Comando "${command}" enviado para ${phoneNumber}: ${data.message}`;
                     messageDiv.className = 'success';
                 } else {
-                    // Tenta exibir a mensagem de erro do n8n, ou uma genérica.
                     messageDiv.textContent = `Erro ao enviar comando: ${data.message || 'Resposta inesperada do servidor n8n.'}`;
                     messageDiv.className = 'error';
                 }
             } catch (error) {
-                // Erro de rede ou JSON inválido (se o n8n não retornar JSON válido)
                 messageDiv.textContent = `Erro de conexão: ${error.message}. Verifique a URL do n8n ou sua internet.`;
                 messageDiv.className = 'error';
             }
-            messageDiv.style.display = 'block'; // Mostra a mensagem
+            messageDiv.style.display = 'block';
         }
 
         document.getElementById('playBtn').addEventListener('click', () => sendCommand('/play'));
